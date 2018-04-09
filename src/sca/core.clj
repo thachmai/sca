@@ -1,15 +1,16 @@
 (ns sca.core
   (:require [reaver :refer [parse extract extract-from text attr]]
+            [hiccup.core :refer [html]]
             [clj-http.client :as client])
   (:gen-class))
 
 (def ^:private root "https://www.destroyallsoftware.com")
+(def ^:private directory "output/")
 (defn- url [& _] (apply str root _))
 (def ^:private catalog (slurp (url "/screencasts/catalog")))
 (def ^:private parsed-catalog (parse catalog))
 
 (defn- file-download [url path]
-  (clojure.java.io/make-parents path)
   (-> (client/get url {:as :stream :headers {"User-Agent" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0"}})
       (:body)
       (clojure.java.io/copy (clojure.java.io/file path)))
@@ -42,7 +43,7 @@
                          .toString
                          (re-find #"[^\"]*resolution\=4k")))]
     (println "Processing " catalog-episode)
-    ;(Thread/sleep 20000) ; sleep 20s to avoid DoS the server
+    (Thread/sleep 20000) ; sleep 20s to avoid DoS the server
     (->
      (extract parsed
               [:description-html :video-id :video-source]
@@ -55,16 +56,27 @@
      ((fn [details]
         (file-download
          (url (:video-source details))
-         (str "videos/" (:video-id details) ".mp4"))
+         (str directory "videos/" (:video-id details) ".mp4"))
         details))
      (merge catalog-episode))))
 ; (catalog-page {:sub-url "/screencasts/catalog/pretty-git-logs" :id "test-id"})
 
+#_(def full (slurp (str directory "destroy-all-episodes.edn")))
+#_(defn- generate-hiccup [catalog]
+  (let [season-mapper #([:h1 ])])
+  (html
+   [:html
+    (map #() catalog)
+    ]))
+
 (defn -main
   "Execution entry point"
   [& args]
+  (clojure.java.io/make-parents (str directory "videos/dummy"))
   (let [top (top-catalog)
-        ; mapping wrong here
-        full (map episode-page top)]
-    (clojure.pprint/pprint full (clojure.java.io/writer "destroy-all-episodes.edn"))
+        top-to-full (fn [catalog]
+                      (let [episodes (map episode-page (:episodes catalog))]
+                        (merge catalog {:episodes episodes})))
+        full (map top-to-full top)]
+    (clojure.pprint/pprint full (clojure.java.io/writer (str directory "destroy-all-episodes.edn")))
     ))
