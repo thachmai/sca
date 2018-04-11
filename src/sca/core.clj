@@ -66,9 +66,10 @@
 #_(generate-hiccup (clojure.edn/read-string (slurp (str directory "destroy-all-episodes.edn"))))
 (defn- generate-hiccup [catalog]
   (let [css ".on { display: block; } .off { display: none; }"
-        button-js "document.querySelector('div.on') && (document.querySelector('div.on').className='off');
+        button-js "document.querySelectorAll('video').forEach(e => e.pause());
+                   document.querySelectorAll('div.on').forEach(e => e.className='off');
                    this.parentElement.parentElement.nextSibling.className='on';
-                   document.querySelector('.button-on') && (document.querySelector('.button-on').className='button button-outline');
+                   document.querySelectorAll('.button-on').forEach(e => e.className='button button-outline');
                    this.className='button button-on';"
         episode-mapper #(identity [:section
                                    [:div.row
@@ -80,8 +81,8 @@
                                     [:div.row
                                      [:div.column (:description-html %1)]]
                                     [:div.row
-                                     [:div.column
-                                      [:video {:src (:video-url %1) :width "1080" :controls "yes"}]]]]])
+                                     [:div.column {:style "padding-bottom: 3em;"}
+                                      [:video {:src (:video-url %1) :width "1080" :height "675" :controls "yes" :preload "none"}]]]]])
         season-mapper #(identity [:div.container {:style "margin-bottom: 3em;"}
                                   [:h1(:header %1)]
                                   (map episode-mapper (:episodes %1))])]
