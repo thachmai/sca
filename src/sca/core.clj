@@ -23,15 +23,13 @@
                 "a" (attr :href)
                 ".title" text
                 ".subtitle" text
-                ".duration" text
-                ))
+                ".duration" text))
 
 (defn- top-catalog []
   (extract-from parsed-catalog ".catalog_by_season > .season"
                 [:header :episodes]
                 "h1 > img" (attr :alt)
-                ".episodes" extract-episode
-                ))
+                ".episodes" extract-episode))
 
 (defn- episode-page
   "Download each catalog page downloads the video into videos/ directory.
@@ -65,25 +63,17 @@
 
 #_(generate-hiccup (clojure.edn/read-string (slurp (str directory "destroy-all-episodes.edn"))))
 (defn- generate-hiccup [catalog]
-  (let [css ".on { display: block; } .off { display: none; }"
-        button-js "document.querySelectorAll('video').forEach(e => e.pause());
-                   document.querySelectorAll('div.on').forEach(e => e.className='off');
-                   this.parentElement.parentElement.nextSibling.className='on';
-                   document.querySelectorAll('.button-on').forEach(e => e.className='button button-outline');
-                   this.className='button button-on';"
+  (let [css ".season { padding-top: 6em; } .button { background: #606c76; border: none; box-shadow: 0 0 2px grey;}"
         episode-mapper #(identity [:section
                                    [:div.row
                                     [:div.column.column-33 {:style "font-weight: bold;"} (:title %1)]
                                     [:div.column.column-57 (:sub-title %1)]
                                     [:div.column.column-10 {:style "text-align: right;"}
-                                     [:a.button.button-outline {:onclick button-js} "View"]]]
-                                   [:div.off
+                                     [:a.button.afterglow {:href (str "#" (:video-id %1))} "View"]]]
                                     [:div.row
-                                     [:div.column (:description-html %1)]]
-                                    [:div.row
-                                     [:div.column {:style "padding-bottom: 3em;"}
-                                      [:video {:src (:video-url %1) :width "1080" :height "675" :controls "yes" :preload "none"}]]]]])
-        season-mapper #(identity [:div.container {:style "margin-bottom: 3em;"}
+                                     [:video {:id (:video-id %1) :src (:video-url %1) :width "1080" :height "675"}] ;afterglow needs width+height for lightbox
+                                     [:div.column (:description-html %1)]]])
+        season-mapper #(identity [:div.container.season
                                   [:h1(:header %1)]
                                   (map episode-mapper (:episodes %1))])]
     (->>
@@ -93,8 +83,9 @@
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/necolas/normalize.css/master/normalize.css"}]
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css"}]
        [:style css]
-       [:body {:style "margin-top: 6em"}
-        (map season-mapper catalog)]])
+       [:body {:style "height: 100%;"} ; afterglow lightbox behaves weirdly without body height
+        (map season-mapper catalog)
+        [:script {:src "//cdn.jsdelivr.net/npm/afterglowplayer@1.x"}]]])
      (spit (str directory "index.html")))))
 
 (defn -main
