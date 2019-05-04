@@ -5,7 +5,7 @@
   (:gen-class))
 
 (def ^:private root "https://lambdaisland.com")
-(def ^:private directory "output/")
+(def ^:private directory "output_lambda/")
 (defn- url [& _] (apply str root _))
 (def ^:private catalog (slurp (url "/episodes/all")))
 (def ^:private parsed-catalog (parse catalog))
@@ -54,14 +54,13 @@
   (let [css ".season { padding-top: 6em; } .button { background: #606c76; border: none; box-shadow: 0 0 2px grey;}"
         episode-mapper #(identity [:section.container
                                    [:div.row
-                                    [:div.column.column-60 {:style "font-weight: bold;"} (:title %1)]
-                                    [:div.column.column-20 (:published %1)]
+                                    [:div.column.column-50 {:style "font-weight: bold;"} (:title %1)]
+                                    [:div.column.column-30 {:style "text-align: right;"} (:published %1)]
                                     [:div.column.column-10
                                      [:a.button {:onclick (notes-toggle-js %1)}  "Notes"]]
                                     [:div.column.column-10 {:style "text-align: right;"}
-                                     [:a.button.afterglow {:href (str "#" (video-id %1))} "View"]]]
+                                     [:a.button {:target "_blank" :href (str (:mp4-name %1))} "View"]]]
                                    [:div.row
-                                    [:video {:id (video-id %1) :src (:mp4-name %1) :width "1280" :height "720"}] ;afterglow needs width+height for lightbox
                                     [:div.column (:description %1)]]
                                    [:div.row
                                     [:div.column {:id (notes-id %1) :style "display: none"} (:notes %1)]]])
@@ -74,9 +73,12 @@
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/necolas/normalize.css/master/normalize.css"}]
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css"}]
        [:style css]
-       [:body {:style "height: 100%; padding: 100px;"} ; afterglow lightbox behaves weirdly without body height
-        (map episode-mapper catalog)
-        [:script {:src "//cdn.jsdelivr.net/npm/afterglowplayer@1.x"}]]])
+       [:body {:style "padding: 50px 0 100px 0;"} 
+        [:h2 {:style "margin-bottom: 50px; text-align: center; "}
+         [:span "Episodes from "]
+         [:a {:href root} root]]
+        [:div
+         (map episode-mapper catalog)]]])
      (spit (str directory "index.html")))))
 
 (defn do-it
