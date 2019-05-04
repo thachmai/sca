@@ -5,7 +5,7 @@
   (:gen-class))
 
 (def ^:private root "https://www.destroyallsoftware.com")
-(def ^:private directory "output/")
+(def ^:private directory "output_destroy/")
 (defn- url [& _] (apply str root _))
 (def ^:private catalog (slurp (url "/screencasts/catalog")))
 (def ^:private parsed-catalog (parse catalog))
@@ -63,18 +63,17 @@
 
 #_(generate-hiccup (clojure.edn/read-string (slurp (str directory "destroy-all-episodes.edn"))))
 (defn- generate-hiccup [catalog]
-  (let [css ".season { padding-top: 6em; } .button { background: #606c76; border: none; box-shadow: 0 0 2px grey;}"
+  (let [css ".season { padding-top: 50px; } .button { background: #606c76; border: none; box-shadow: 0 0 2px grey;}"
         episode-mapper #(identity [:section
                                    [:div.row
                                     [:div.column.column-33 {:style "font-weight: bold;"} (:title %1)]
                                     [:div.column.column-57 (:sub-title %1)]
                                     [:div.column.column-10 {:style "text-align: right;"}
-                                     [:a.button.afterglow {:href (str "#" (:video-id %1))} "View"]]]
+                                     [:a.button.afterglow {:target "_blank" :href (:video-url %1)} "View"]]]
                                     [:div.row
-                                     [:video {:id (:video-id %1) :src (:video-url %1) :width "1080" :height "675"}] ;afterglow needs width+height for lightbox
                                      [:div.column (:description-html %1)]]])
         season-mapper #(identity [:div.container.season
-                                  [:h1(:header %1)]
+                                  [:h3(:header %1)]
                                   (map episode-mapper (:episodes %1))])]
     (->>
      (html
@@ -83,9 +82,11 @@
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/necolas/normalize.css/master/normalize.css"}]
        [:link {:rel "stylesheet" :href "//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css"}]
        [:style css]
-       [:body {:style "height: 100%;"} ; afterglow lightbox behaves weirdly without body height
-        (map season-mapper catalog)
-        [:script {:src "//cdn.jsdelivr.net/npm/afterglowplayer@1.x"}]]])
+       [:body {:style "padding: 50px 0 100px 0;"}
+        [:h2 {:style "text-align: center;"} [:a {:href root} root]]
+        [:div
+         (map season-mapper catalog)]
+        ]])
      (spit (str directory "index.html")))))
 
 (defn -main
